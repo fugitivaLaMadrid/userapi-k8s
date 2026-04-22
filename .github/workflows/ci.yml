@@ -50,14 +50,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-        continue-on-error: true
 
       - name: Build Docker image
         run: docker build -t fugitiva/userapi:latest .
 
       - name: Push Docker image
         run: docker push fugitiva/userapi:latest
-        continue-on-error: true
 
       - name: Publish test results
         uses: actions/upload-artifact@v4

@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: userapi_postgres
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - userapi_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: userapi_keycloak
+    env_file:
+      - .env
+    ports:
+      - "8180:8080"
+    command: start-dev
+    volumes:
+      - userapi_keycloak_data:/opt/keycloak/data
+    restart: unless-stopped
+
+  userapi:
+    build: .
+    container_name: userapi_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    container_name: userapi_adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sonarqube:
+    image: sonarqube:latest
+    container_name: userapi_sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - userapi_sonarqube_data:/opt/sonarqube/data
+      - userapi_sonarqube_logs:/opt/sonarqube/logs
+      - userapi_sonarqube_extensions:/opt/sonarqube/extensions
+      - userapi_sonarqube_temp:/opt/sonarqube/temp
+    restart: unless-stopped
+
+volumes:
+  userapi_postgres_data:
+  userapi_sonarqube_data:
+  userapi_sonarqube_logs:
+  userapi_sonarqube_extensions:
+  userapi_sonarqube_temp:
+  userapi_keycloak_data:
