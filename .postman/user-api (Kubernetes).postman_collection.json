@@ -1,0 +1,1042 @@
+{
+  "info": {
+    "_postman_id": "3dc0f731-e688-4e54-b5d8-00569278795c",
+    "name": "user-api (Kubernetes)",
+    "description": "User API with JWT/OAuth2 authentication via Keycloak - Kubernetes Deployment\n\n**Endpoints**:\n- UserAPI: http://localhost:30080 (NodePort)\n- Keycloak: http://localhost:30180 (NodePort)\n\n**Differences from Docker version**:\n- Updated ports for Kubernetes NodePort services\n- Same authentication flow and API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12268386"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Access Token (Password Grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    console.log('Token response:', json);",
+                  "    console.log('Access token found:', json.access_token ? 'YES' : 'NO');",
+                  "    pm.collectionVariables.set('accessToken', json.access_token);",
+                  "    pm.collectionVariables.set('tokenType', json.token_type);",
+                  "    pm.collectionVariables.set('expiresIn', json.expires_in);",
+                  "    console.log('Token saved to accessToken variable');",
+                  "    console.log('Current accessToken value:', pm.collectionVariables.get('accessToken'));",
+                  "    ",
+                  "    pm.test('K8s: Access token received', function () {",
+                  "        pm.expect(json.access_token).to.be.a('string');",
+                  "        pm.expect(json.access_token.length).to.be.above(100);",
+                  "    });",
+                  "    ",
+                  "    pm.test('K8s: Token type is Bearer', function () {",
+                  "        pm.expect(json.token_type).to.eql('Bearer');",
+                  "    });",
+                  "    ",
+                  "    pm.test('K8s: Token expires in 300 seconds', function () {",
+                  "        pm.expect(json.expires_in).to.be.a('number');",
+                  "        pm.expect(json.expires_in).to.be.above(0);",
+                  "    });",
+                  "} else {",
+                  "    pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{clientSecret}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid profile email",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:30180/realms/{{realm}}/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30180",
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "Get JWT access token using Resource Owner Password Credentials (ROPC) flow - **Kubernetes Version**\n\n**Grant Type**: password\n**Username**: admin\n**Password**: admin123\n**Keycloak URL**: http://localhost:30180 (Kubernetes NodePort)\n\nThis token will be automatically stored in the `accessToken` variable and used for all subsequent requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Access Token (Client Credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.access_token);",
+                  "    ",
+                  "    pm.test('K8s: Access token received', function () {",
+                  "        pm.expect(json.access_token).to.be.a('string');",
+                  "        pm.expect(json.access_token.length).to.be.above(100);",
+                  "    });",
+                  "} else {",
+                  "    pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{clientSecret}}",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:30180/realms/{{realm}}/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30180",
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "Get JWT access token using Client Credentials flow (service-to-service authentication) - **Kubernetes Version**\n\n**Grant Type**: client_credentials\n**Keycloak URL**: http://localhost:30180 (Kubernetes NodePort)\n\nNote: This flow does not have user context, so token will not include user roles."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Endpoints",
+      "item": [
+        {
+          "name": "Get All Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "console.log('K8s DEBUG: accessToken variable value:', token);",
+                  "console.log('K8s DEBUG: accessToken type:', typeof token);",
+                  "console.log('K8s DEBUG: accessToken length:', token ? token.length : 'null');",
+                  "if (!token || token.length === 0) {",
+                  "    console.warn('K8s WARNING: No access token found!');",
+                  "    console.warn('Please run \"Get Access Token (Password Grant)\" request first');",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "} else {",
+                  "    console.log('K8s: Using access token: ' + token.substring(0, 20) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('K8s: Response time is under 3000ms', function () { pm.expect(pm.response.responseTime).to.be.below(3000); });",
+                  "pm.test('K8s: Response is JSON array', function () { pm.expect(pm.response.json()).to.be.an('array'); });",
+                  "pm.test('K8s: Response has Content-Type header', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Get all users (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User By ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "} else {",
+                  "    pm.variables.set('userId', '1');",
+                  "    console.log('K8s: Using access token for request');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('K8s: Response time is under 3000ms', function () { pm.expect(pm.response.responseTime).to.be.below(3000); });",
+                  "pm.test('K8s: Response body parses as JSON', function () { pm.response.to.be.json; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Get a specific user by ID (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Path Variables**:\n- userId: User ID to retrieve"
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}",
+                  "pm.variables.set('uniqueEmail', 'k8s_user_' + Date.now() + '@example.com');",
+                  "pm.variables.set('uniqueUsername', 'k8s_user_' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status is 201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('K8s: Response is JSON', function () { pm.response.to.be.json; });",
+                  "if (pm.response.text()) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('K8s: Created user has an id', function () { pm.expect(json.id).to.not.be.undefined; });",
+                  "    pm.test('K8s: Returns submitted username', function () { pm.expect(json.username).to.eql(pm.variables.get('uniqueUsername')); });",
+                  "    pm.test('K8s: Returns submitted email', function () { pm.expect(json.email).to.eql(pm.variables.get('uniqueEmail')); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"{{uniqueUsername}}\",\r\n    \"email\": \"{{uniqueEmail}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:30080/users",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Create a new user (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Content-Type**: application/json"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User (Full)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}",
+                  "pm.variables.set('userId', '2');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('K8s: Response time is under 5000ms', function () { pm.expect(pm.response.responseTime).to.be.below(5000); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"k8s_updated_user\",\r\n    \"email\": \"k8s_updated@example.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:30080/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Update entire user (full replacement - requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Path Variables**:\n- userId: User ID to update"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User (Partial)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}",
+                  "pm.variables.set('userId', '1');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('K8s: Response time is under 3000ms', function () { pm.expect(pm.response.responseTime).to.be.below(3000); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"k8s_newemail@example.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:30080/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Update partial user fields (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Path Variables**:\n- userId: User ID to update\n**Note**: Only provided fields will be updated"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "} else {",
+                  "    // Create a user first to delete",
+                  "    pm.sendRequest({",
+                  "        url: 'http://localhost:30080/users',",
+                  "        method: 'POST',",
+                  "        header: {",
+                  "            'Content-Type': 'application/json',",
+                  "            'Authorization': 'Bearer ' + token,",
+                  "        },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({",
+                  "                username: 'k8s_user_to_delete_' + Date.now(),",
+                  "                email: 'k8s_delete_' + Date.now() + '@example.com'",
+                  "            })",
+                  "        }",
+                  "    }, function (err, res) {",
+                  "        if (res && res.code === 201) {",
+                  "            const json = res.json();",
+                  "            pm.variables.set('deleteUserId', json.id);",
+                  "            console.log('K8s: Created user with ID: ' + json.id + ' for deletion test');",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('K8s: Response time is under 2000ms', function () { pm.expect(pm.response.responseTime).to.be.below(2000); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users/{{deleteUserId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "{{deleteUserId}}"
+              ]
+            },
+            "description": "Delete a user (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Path Variables**:\n- deleteUserId: User ID to delete\n**Note**: A test user is automatically created for deletion in pre-request"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}",
+                  "pm.variables.set('searchName', 'alice');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('K8s: Response time is under 2000ms', function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test('K8s: Response is JSON', function () { pm.response.to.be.json; });",
+                  "pm.test('K8s: Response is an array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users/search?name={{searchName}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "{{searchName}}"
+                }
+              ]
+            },
+            "description": "Search users by name (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Query Parameters**:\n- name: Search term for username"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Users with Sorting",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}",
+                  "pm.variables.set('searchName', 'alice');",
+                  "pm.variables.set('sortBy', 'email');",
+                  "pm.variables.set('direction', 'desc');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('K8s: Response time is under 2000ms', function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test('K8s: Response is JSON array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users/search?name={{searchName}}&sortBy={{sortBy}}&direction={{direction}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "{{searchName}}"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "{{sortBy}}"
+                },
+                {
+                  "key": "direction",
+                  "value": "{{direction}}"
+                }
+              ]
+            },
+            "description": "Search users with sorting options (requires ADMIN role) - **Kubernetes Version**\n\n**Authentication**: JWT Bearer token\n**Required Role**: ADMIN\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Query Parameters**:\n- name: Search term\n- sortBy: Field to sort by (e.g., 'email', 'username')\n- direction: Sort direction ('asc' or 'desc')"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "item": [
+        {
+          "name": "Invalid User ID Type",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Invalid type in path returns 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('K8s: Error message is meaningful', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message).to.include('invalid');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/users/abc",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users",
+                "abc"
+              ]
+            },
+            "description": "Test error handling with invalid user ID type (requires valid JWT token) - **Kubernetes Version**\n\n**Expected**: 400 Bad Request\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)"
+          },
+          "response": []
+        },
+        {
+          "name": "Non-existent Endpoint",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get('accessToken');",
+                  "if (!token || token.length === 0) {",
+                  "    pm.test('K8s: Access token must be set', function () { pm.expect(token).to.exist; });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Non-existent endpoint returns 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('K8s: Error response has status field', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "JWT Bearer token for authentication",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:30080/wrongpath",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "wrongpath"
+              ]
+            },
+            "description": "Test 404 error with non-existent endpoint (requires valid JWT token) - **Kubernetes Version**\n\n**Expected**: 404 Not Found\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)"
+          },
+          "response": []
+        },
+        {
+          "name": "Unauthorized Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Unauthorized request returns 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('K8s: Error response contains WWW-Authenticate header', function () {",
+                  "    const authHeader = pm.response.headers.get('WWW-Authenticate');",
+                  "    pm.expect(authHeader).to.include('Bearer');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:30080/users",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Test unauthorized request without JWT token - **Kubernetes Version**\n\n**Expected**: 401 Unauthorized\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Application Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Health endpoint returns 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('K8s: Response time is under 1000ms', function () { pm.expect(pm.response.responseTime).to.be.below(1000); });",
+                  "if (pm.response.text()) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('K8s: Health status is UP', function () { pm.expect(json.status).to.eql('UP'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:30080/actuator/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Check application health status - **Kubernetes Version**\n\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Expected**: 200 OK with health status"
+          },
+          "response": []
+        },
+        {
+          "name": "Application Readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Readiness endpoint returns 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.text()) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('K8s: Readiness status is UP', function () { pm.expect(json.status).to.eql('UP'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:30080/actuator/health/readiness",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "actuator",
+                "health",
+                "readiness"
+              ]
+            },
+            "description": "Check application readiness status - **Kubernetes Version**\n\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Expected**: 200 OK with readiness status"
+          },
+          "response": []
+        },
+        {
+          "name": "Application Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('K8s: Info endpoint returns 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.text()) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('K8s: App info contains name', function () { pm.expect(json.app.name).to.eql('userapi'); });",
+                  "    pm.test('K8s: App info contains version', function () { pm.expect(json.app.version).to.exist; });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:30080/actuator/info",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "30080",
+              "path": [
+                "actuator",
+                "info"
+              ]
+            },
+            "description": "Get application information - **Kubernetes Version**\n\n**UserAPI URL**: http://localhost:30080 (Kubernetes NodePort)\n**Expected**: 200 OK with app metadata"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "tokenType",
+      "value": "Bearer"
+    },
+    {
+      "key": "expiresIn",
+      "value": "300"
+    },
+    {
+      "key": "clientId",
+      "value": "userapi-client"
+    },
+    {
+      "key": "clientSecret",
+      "value": "userapi-client-secret"
+    },
+    {
+      "key": "realm",
+      "value": "userapi-realm"
+    }
+  ]
+}

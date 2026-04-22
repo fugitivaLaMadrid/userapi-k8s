@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: userapi-secret
+  namespace: default
+type: Opaque
+stringData:
+  keycloak_client_secret: "US9FWPsmElIYJHwHSQOHh9GRQm1yqXAw"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userapi-deployment
+  namespace: default
+  labels:
+    app: userapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: userapi
+  template:
+    metadata:
+      labels:
+        app: userapi
+    spec:
+      initContainers:
+        - name: wait-for-keycloak
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Keycloak to be ready..."
+              until nc -z keycloak-service 8080; do
+                echo "Keycloak is not ready yet. Retrying in 5 seconds..."
+                sleep 5
+              done
+              echo "Keycloak is ready!"
+      containers:
+        - name: userapi
+          image: userapi:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: POSTGRES_HOST
+              value: "postgres-service"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: "userapi_db"
+            - name: POSTGRES_USER
+              value: "userapi_user"
+            - name: POSTGRES_PASSWORD
+              value: "userapi_pass"
+            - name: JWT_ISSUER_URI
+              value: "http://keycloak-service:8080/realms/userapi-realm"
+            - name: KEYCLOAK_URL
+              value: "http://keycloak-service:8080"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "userapi-client"
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: userapi-secret
+                  key: keycloak_client_secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

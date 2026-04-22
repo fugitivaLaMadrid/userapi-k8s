@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: userapi-config
+  namespace: default
+  labels:
+    app: userapi
+    component: configuration
+    version: v1
+data:
+  # Database configuration
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "userapi_db"
+  
+  # Spring Boot configuration
+  SPRING_PROFILES_ACTIVE: "kubernetes"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/userapi_db"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_JPA_SHOW_SQL: "false"
+  
+  # Keycloak configuration
+  KEYCLOAK_HOST: "keycloak-service"
+  KEYCLOAK_PORT: "8080"
+  KEYCLOAK_REALM: "userapi-realm"
+  
+  # Application configuration
+  SERVER_PORT: "8080"
+  LOGGING_LEVEL_ROOT: "INFO"
+  LOGGING_LEVEL_COM_FUGITIVALAMADRID: "DEBUG"

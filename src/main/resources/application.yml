@@ -1,0 +1,13 @@
+# Base configuration - profile-specific settings in application-{profile}.yml
+spring:
+  application:
+    name: userapi
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+info:
+  app:
+    name: userapi
+    version: 1.0.0
+    description: User Management REST API
+    java-version: 17

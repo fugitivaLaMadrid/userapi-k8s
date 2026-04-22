@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminer-service
+  namespace: default
+  labels:
+    app: adminer
+    component: database-management
+    version: v1
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: adminer
+  selector:
+    app: adminer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminer-service-nodeport
+  namespace: default
+  labels:
+    app: adminer
+    component: database-management
+    version: v1
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30880
+    protocol: TCP
+    name: adminer
+  selector:
+    app: adminer
